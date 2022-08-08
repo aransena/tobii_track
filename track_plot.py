@@ -2,6 +2,7 @@
 # ImportanceOfBeingErnest, Oct 19, 2016 at 18:54
 
 import sys
+import os
 import time
 from pyqtgraph.Qt import QtCore, QtGui
 import numpy as np
@@ -54,6 +55,7 @@ class App(QtGui.QMainWindow):
         #### Create Gui Elements ###########
         self.start_stamp = time.strftime("%y-%m-%d-%H-%M-%S")
         self.file_name = self.start_stamp + '.csv'
+        os.mkdirs('data', exist_ok=True)
         self.file_path = "data/" + self.file_name
         self.eyetracker = my_eyetracker
         self.mainbox = QtGui.QWidget()

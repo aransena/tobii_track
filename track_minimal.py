@@ -1,6 +1,7 @@
 import tobii_research as tr
 from csv import DictWriter
 import time
+import os
 from copy import deepcopy
 global data, file_path, count, prev_gaze_data
 
@@ -45,6 +46,7 @@ if __name__ == '__main__':
     count = 0
     data = None
     start_stamp = time.strftime("%y-%m-%d-%H-%M-%S")
+    os.mkdirs('data', exist_ok=True)
     file_path = "data/"+start_stamp+".csv"
     my_eyetracker = connect()
     if my_eyetracker is not None:
