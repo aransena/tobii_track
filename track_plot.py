@@ -55,7 +55,7 @@ class App(QtGui.QMainWindow):
         #### Create Gui Elements ###########
         self.start_stamp = time.strftime("%y-%m-%d-%H-%M-%S")
         self.file_name = self.start_stamp + '.csv'
-        os.mkdirs('data', exist_ok=True)
+        os.makedirs('data', exist_ok=True)
         self.file_path = "data/" + self.file_name
         self.eyetracker = my_eyetracker
         self.mainbox = QtGui.QWidget()
