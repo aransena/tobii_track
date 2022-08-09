@@ -1,46 +1,51 @@
 import tobii_research as tr
-from csv import DictWriter
+import socket
 import time
 import os
 from copy import deepcopy
-global data, file_path, count, prev_gaze_data
+global data, file_path, count, prev_gaze_data, tcp_socket
 
-# [0, 'device_time_stamp',
-# 1, 'system_time_stamp',
-# 2, 'left_gaze_point_on_display_area',
-# 3, 'left_gaze_point_in_user_coordinate_system',
-# 4, 'left_gaze_point_validity',
-# 5, 'left_pupil_diameter',
-# 6, 'left_pupil_validity',
-# 7, 'left_gaze_origin_in_user_coordinate_system',
-# 8, 'left_gaze_origin_in_trackbox_coordinate_system',
-# 9, 'left_gaze_origin_validity',
-# 10, 'right_gaze_point_on_display_area',
-# 11, 'right_gaze_point_in_user_coordinate_system',
-# 12, 'right_gaze_point_validity',
-# 13, 'right_pupil_diameter',
-# 14, 'right_pupil_validity',
-# 15, 'right_gaze_origin_in_user_coordinate_system',
-# 16, 'right_gaze_origin_in_trackbox_coordinate_system',
-# 17, 'right_gaze_origin_validity'])
+
+def connect_tcp(TCP_IP, TCP_PORT, BUFFER_SIZE):
+    global tcp_socket
+    ready = False
+    while not ready:
+        try:
+            tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            tcp_socket.connect((TCP_IP, TCP_PORT))
+            ready = True
+        except Exception as e:
+            print(e)
+            time.sleep(0.5)
+
 
 def gaze_data_callback(gaze_data):
-    global data, file_path, count, prev_gaze_data
+    global data, file_path, count, prev_gaze_data, tcp_socket
     if prev_gaze_data is None:
         prev_gaze_data = deepcopy(gaze_data)
     if gaze_data['device_time_stamp'] != prev_gaze_data['device_time_stamp']:
         prev_gaze_data = deepcopy(gaze_data)
         data = deepcopy(gaze_data)
     try:
-        with open(file_path, 'a+', newline='') as write_obj:
-            csv_writer = DictWriter(write_obj, fieldnames=list(gaze_data.keys()))
-            csv_writer.writerow(gaze_data)
-        count += 1
-        if count % 100 == 0:
-            print(f"{count} lines written.")
+        data_msg = str(gaze_data['device_time_stamp']) + ',' + \
+            str(gaze_data['left_gaze_point_on_display_area'][0]) + ',' + \
+            str(gaze_data['left_gaze_point_on_display_area'][1]) + ',' + \
+            str(gaze_data['left_gaze_point_validity']) + ',' + \
+            str(gaze_data['left_pupil_diameter']) + ',' + \
+            str(gaze_data['right_gaze_point_on_display_area'][0]) + ',' + \
+            str(gaze_data['right_gaze_point_on_display_area'][1]) + ',' + \
+            str(gaze_data['right_gaze_point_validity']) + ',' + \
+            str(gaze_data['right_pupil_diameter'])
+        print(data_msg)
+        tcp_socket.send(data_msg.encode('utf-8'))
 
     except Exception as e:
         print(e)
+
+        TCP_IP = '146.169.220.70'
+        TCP_PORT = 8000
+        BUFFER_SIZE = 1024
+        connect_tcp(TCP_IP, TCP_PORT, BUFFER_SIZE)
 
 
 def connect():
@@ -59,14 +64,19 @@ def connect():
 
 
 if __name__ == '__main__':
-    global data, file_path, count, prev_gaze_data
+    global data, file_path, count, prev_gaze_data, tcp_socket
     prev_gaze_data = None
     count = 0
     data = None
-    start_stamp = time.strftime("%y-%m-%d-%H-%M-%S")
-    os.makedirs('data', exist_ok=True)
-    file_path = "data/"+start_stamp+".csv"
+
     my_eyetracker = connect()
+
+    TCP_IP = '146.169.220.70'
+    TCP_PORT = 8000
+    BUFFER_SIZE = 1024
+
+    connect_tcp(TCP_IP, TCP_PORT, BUFFER_SIZE)
+
     if my_eyetracker is not None:
         my_eyetracker.subscribe_to(tr.EYETRACKER_GAZE_DATA, gaze_data_callback, as_dictionary=True)
         prev_timestamp = 0
