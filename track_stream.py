@@ -3,11 +3,14 @@ import socket
 import time
 import os
 from copy import deepcopy
-global data, file_path, count, prev_gaze_data, tcp_socket
+from csv import DictWriter
 
 
-def connect_tcp(TCP_IP, TCP_PORT, BUFFER_SIZE):
-    global tcp_socket
+global data, file_path, count, prev_gaze_data, tcp_socket, TCP_IP, TCP_PORT
+
+
+def connect_tcp():
+    global tcp_socket, TCP_IP, TCP_PORT
     ready = False
     while not ready:
         try:
@@ -17,6 +20,7 @@ def connect_tcp(TCP_IP, TCP_PORT, BUFFER_SIZE):
         except Exception as e:
             print(e)
             time.sleep(0.5)
+
 
 
 def gaze_data_callback(gaze_data):
@@ -39,13 +43,20 @@ def gaze_data_callback(gaze_data):
         print(data_msg)
         tcp_socket.send(data_msg.encode('utf-8'))
 
+        try:
+            with open(file_path, 'a+', newline='') as write_obj:
+                csv_writer = DictWriter(write_obj, fieldnames=list(gaze_data.keys()))
+                csv_writer.writerow(gaze_data)
+            count += 1
+            if count % 1000 == 0:
+                print(f"{count} lines written.")
+
+        except Exception as e:
+            print(e)
+
     except Exception as e:
         print(e)
-
-        TCP_IP = '146.169.220.70'
-        TCP_PORT = 8000
-        BUFFER_SIZE = 1024
-        connect_tcp(TCP_IP, TCP_PORT, BUFFER_SIZE)
+        connect_tcp()
 
 
 def connect():
@@ -64,18 +75,21 @@ def connect():
 
 
 if __name__ == '__main__':
-    global data, file_path, count, prev_gaze_data, tcp_socket
+    global data, file_path, count, prev_gaze_data, tcp_socket, TCP_IP, TCP_PORT
     prev_gaze_data = None
     count = 0
     data = None
+
+    start_stamp = time.strftime("%y-%m-%d-%H-%M-%S")
+    os.makedirs('data', exist_ok=True)
+    file_path = "data/" + start_stamp + ".csv"
 
     my_eyetracker = connect()
 
     TCP_IP = '146.169.220.70'
     TCP_PORT = 8000
-    BUFFER_SIZE = 1024
 
-    connect_tcp(TCP_IP, TCP_PORT, BUFFER_SIZE)
+    connect_tcp()
 
     if my_eyetracker is not None:
         my_eyetracker.subscribe_to(tr.EYETRACKER_GAZE_DATA, gaze_data_callback, as_dictionary=True)
